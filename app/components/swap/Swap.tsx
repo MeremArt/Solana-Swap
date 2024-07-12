@@ -1,22 +1,25 @@
-"use client";
 import styles from "./swap.module.css";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { VersionedTransaction, Connection } from "@solana/web3.js";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import {
+  PublicKey,
+  VersionedTransaction,
+  TransactionInstruction,
+  AddressLookupTableAccount,
+  TransactionMessage,
+  Connection,
+} from "@solana/web3.js";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { clusterApiUrl } from "@solana/web3.js";
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-} from "@solana/wallet-adapter-wallets";
-import React, { useState, useEffect, useCallback } from "react";
-import "@solana/wallet-adapter-react-ui/styles.css";
-import {
-  ConnectionProvider,
-  WalletProvider,
-} from "@solana/wallet-adapter-react";
-const assets = [
+import { useConnection, useNetwork } from "../../wallet/WalletContextProvider";
+interface Asset {
+  name: string;
+  mint: string;
+  decimals: number;
+}
+
+const assets: Asset[] = [
   {
     name: "SOL",
     mint: "So11111111111111111111111111111111111111112",
@@ -39,136 +42,191 @@ const assets = [
   },
 ];
 
-const debounce = <T extends unknown[]>(
-  func: (...args: T) => void,
-  wait: number
-) => {
-  let timeout: NodeJS.Timeout | undefined;
-
-  return (...args: T) => {
+const debounce = (func: Function, wait: number) => {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  return (...args: any[]) => {
     const later = () => {
       clearTimeout(timeout);
       func(...args);
     };
-
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
 };
 
-export default function Swap() {
-  const network = WalletAdapterNetwork.Devnet;
-  const [areButtonsActive, setAreButtonsActive] = useState(true);
-
+const Swap: React.FC = () => {
   const [fromAsset, setFromAsset] = useState(assets[0]);
   const [toAsset, setToAsset] = useState(assets[1]);
-  const [fromAmount, setFromAmount] = useState(0);
-  const [toAmount, setToAmount] = useState(0);
-  const [quoteResponse, setQuoteResponse] = useState(null);
+  const [fromAmount, setFromAmount] = useState<number>(0);
+  const [toAmount, setToAmount] = useState<number>(0);
+  const [quoteResponse, setQuoteResponse] = useState<any>(null); // Adjust type as needed
+  const [loading, setLoading] = useState(false);
 
   const wallet = useWallet();
+  const connection = useConnection(); // Use the connection from the context
+  const { network } = useNetwork(); // Use the network from the context
 
-  // Need a custom RPC so you don't get rate-limited, don't rely on users' wallets
-  const connection = new Connection(
-    "https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY_HERE"
+  const debounceQuoteCall = useCallback(
+    debounce((currentAmount: number, from: Asset, to: Asset) => {
+      getQuote(currentAmount, from, to);
+    }, 500),
+    []
   );
 
-  const handleFromAssetChange = async (
+  useEffect(() => {
+    debounceQuoteCall(fromAmount, fromAsset, toAsset);
+  }, [fromAmount, fromAsset, toAsset, debounceQuoteCall]);
+
+  const handleFromAssetChange = (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
-    setFromAsset(
-      assets.find((asset) => asset.name === event.target.value) || assets[0]
-    );
+    const selectedAsset =
+      assets.find((asset) => asset.name === event.target.value) || assets[0];
+    setFromAsset(selectedAsset);
+    debounceQuoteCall(fromAmount, selectedAsset, toAsset);
   };
 
   const handleToAssetChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setToAsset(
-      assets.find((asset) => asset.name === event.target.value) || assets[0]
-    );
+    const selectedAsset =
+      assets.find((asset) => asset.name === event.target.value) || assets[0];
+    setToAsset(selectedAsset);
+    debounceQuoteCall(fromAmount, fromAsset, selectedAsset);
   };
-
-  const toggleButtonActivity = () => {
-    setAreButtonsActive(!areButtonsActive);
-  };
-
-  const endpoint = clusterApiUrl(network);
-
-  const wallets = [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter({ network }),
-  ];
 
   const handleFromValueChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setFromAmount(Number(event.target.value));
+    const amount = Number(event.target.value);
+    setFromAmount(amount);
+    debounceQuoteCall(amount, fromAsset, toAsset);
   };
-
-  const debounceQuoteCall = useCallback(debounce(getQuote, 500), []);
-
-  useEffect(() => {
-    debounceQuoteCall(fromAmount);
-  }, [fromAmount, debounceQuoteCall]);
-
-  async function getQuote(currentAmount: number) {
+  async function getQuote(currentAmount: number, from: Asset, to: Asset) {
     if (isNaN(currentAmount) || currentAmount <= 0) {
       console.error("Invalid fromAmount value:", currentAmount);
       return;
     }
 
-    const quote = await (
-      await fetch(
-        `https://quote-api.jup.ag/v6/quote?inputMint=${
-          fromAsset.mint
-        }&outputMint=${toAsset.mint}&amount=${
-          currentAmount * Math.pow(10, fromAsset.decimals)
-        }&slippage=0.5`
-      )
-    ).json();
+    try {
+      const quote = await fetch(
+        `https://quote-api.jup.ag/v6/quote?inputMint=${from.mint}&outputMint=${
+          to.mint
+        }&amount=${
+          currentAmount * Math.pow(10, from.decimals)
+        }&slippage=0.5&network=${
+          network === WalletAdapterNetwork.Devnet ? "devnet" : "mainnet"
+        }`
+      ).then((res) => res.json());
 
-    if (quote && quote.outAmount) {
-      const outAmountNumber =
-        Number(quote.outAmount) / Math.pow(10, toAsset.decimals);
-      setToAmount(outAmountNumber);
+      if (quote && quote.outAmount) {
+        const outAmountNumber =
+          Number(quote.outAmount) / Math.pow(10, to.decimals);
+        setToAmount(outAmountNumber);
+      }
+
+      setQuoteResponse(quote);
+    } catch (error) {
+      console.error("Error fetching quote:", error);
+      toast.error("Error fetching quote");
     }
-
-    setQuoteResponse(quote);
   }
 
   async function signAndSendTransaction() {
-    if (!wallet.connected || !wallet.signTransaction) {
-      console.error(
+    if (!wallet.connected || !wallet.signTransaction || !wallet.publicKey) {
+      toast.error(
         "Wallet is not connected or does not support signing transactions"
       );
       return;
     }
 
-    // get serialized transactions for the swap
-    const { swapTransaction } = await (
-      await fetch("https://quote-api.jup.ag/v6/swap", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          quoteResponse,
-          userPublicKey: wallet.publicKey?.toString(),
-          wrapAndUnwrapSol: true,
-          // feeAccount is optional. Use if you want to charge a fee.  feeBps must have been passed in /quote API.
-          // feeAccount: "fee_account_public_key"
-        }),
-      })
-    ).json();
-
+    setLoading(true);
     try {
-      const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-      const signedTransaction = await wallet.signTransaction(transaction);
+      const response = await fetch(
+        "https://quote-api.jup.ag/v6/swap-instructions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            quoteResponse,
+            userPublicKey: wallet.publicKey.toBase58(),
+          }),
+        }
+      );
 
+      const instructions = await response.json();
+      if (instructions.error) {
+        throw new Error(
+          "Failed to get swap instructions: " + instructions.error
+        );
+      }
+
+      const {
+        computeBudgetInstructions,
+        setupInstructions,
+        swapInstruction: swapInstructionPayload,
+        cleanupInstruction,
+        addressLookupTableAddresses,
+      } = instructions;
+
+      const deserializeInstruction = (instruction: any) => {
+        return new TransactionInstruction({
+          programId: new PublicKey(instruction.programId),
+          keys: instruction.accounts.map((key: any) => ({
+            pubkey: new PublicKey(key.pubkey),
+            isSigner: key.isSigner,
+            isWritable: key.isWritable,
+          })),
+          data: Buffer.from(instruction.data, "base64"),
+        });
+      };
+
+      const getAddressLookupTableAccounts = async (keys: string[]) => {
+        const addressLookupTableAccountInfos =
+          await connection.getMultipleAccountsInfo(
+            keys.map((key) => new PublicKey(key))
+          );
+
+        return addressLookupTableAccountInfos.reduce(
+          (acc, accountInfo, index) => {
+            const addressLookupTableAddress = keys[index];
+            if (accountInfo) {
+              const addressLookupTableAccount = new AddressLookupTableAccount({
+                key: new PublicKey(addressLookupTableAddress),
+                state: AddressLookupTableAccount.deserialize(accountInfo.data),
+              });
+              acc.push(addressLookupTableAccount);
+            }
+            return acc;
+          },
+          [] as AddressLookupTableAccount[]
+        );
+      };
+
+      const addressLookupTableAccounts = await getAddressLookupTableAccounts(
+        addressLookupTableAddresses
+      );
+
+      const blockhash = (await connection.getLatestBlockhash()).blockhash;
+      const messageV0 = new TransactionMessage({
+        payerKey: wallet.publicKey,
+        recentBlockhash: blockhash,
+        instructions: [
+          ...computeBudgetInstructions.map(deserializeInstruction),
+          ...setupInstructions.map(deserializeInstruction),
+          deserializeInstruction(swapInstructionPayload),
+          deserializeInstruction(cleanupInstruction),
+        ],
+      }).compileToV0Message(addressLookupTableAccounts);
+
+      const transaction = new VersionedTransaction(messageV0);
+      console.log("Transaction size:", transaction.serialize().length);
+
+      const signedTransaction = await wallet.signTransaction(transaction);
       const rawTransaction = signedTransaction.serialize();
       const txid = await connection.sendRawTransaction(rawTransaction, {
         skipPreflight: true,
-        maxRetries: 2,
+        maxRetries: 5,
       });
 
       const latestBlockHash = await connection.getLatestBlockhash();
@@ -181,9 +239,15 @@ export default function Swap() {
         "confirmed"
       );
 
-      console.log(`https://solscan.io/tx/${txid}`);
+      console.log(
+        `Transaction sent: https://solscan.io/tx/${txid}?cluster=devnet`
+      );
+      toast.success("Transaction confirmed!");
     } catch (error) {
       console.error("Error signing or sending the transaction:", error);
+      toast.error("Error signing or sending the transaction");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -193,7 +257,6 @@ export default function Swap() {
         <div className={styles.inputContainer}>
           <div className={styles.labels}>You pay</div>
           <input
-            type="number"
             value={fromAmount}
             onChange={handleFromValueChange}
             className={styles.inputField}
@@ -215,7 +278,6 @@ export default function Swap() {
           <input
             type="number"
             value={toAmount}
-            // onChange={(e) => setToAmount(Number(e.target.value))}
             className={styles.inputField}
             readOnly
           />
@@ -234,56 +296,14 @@ export default function Swap() {
         <button
           onClick={signAndSendTransaction}
           className={styles.button}
-          disabled={toAsset.mint === fromAsset.mint}
+          disabled={!wallet.connected || loading}
         >
-          Swap
+          {loading ? "Loading..." : "Swap"}
         </button>
+        <ToastContainer />
       </div>
     </div>
   );
-}
+};
 
-/* Sample quote response
-
-    {
-      "inputMint": "So11111111111111111111111111111111111111112",
-      "inAmount": "100000000",
-      "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      "outAmount": "9998099",
-      "otherAmountThreshold": "9948109",
-      "swapMode": "ExactIn",
-      "slippageBps": 50,
-      "platformFee": null,
-      "priceImpactPct": "0.000146888216121999999999995",
-      "routePlan": [
-        {
-          "swapInfo": {
-            "ammKey": "HcoJqG325TTifs6jyWvRJ9ET4pDu12Xrt2EQKZGFmuKX",
-            "label": "Whirlpool",
-            "inputMint": "So11111111111111111111111111111111111111112",
-            "outputMint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-            "inAmount": "100000000",
-            "outAmount": "10003121",
-            "feeAmount": "4",
-            "feeMint": "So11111111111111111111111111111111111111112"
-          },
-          "percent": 100
-        },
-        {
-          "swapInfo": {
-            "ammKey": "ARwi1S4DaiTG5DX7S4M4ZsrXqpMD1MrTmbu9ue2tpmEq",
-            "label": "Meteora DLMM",
-            "inputMint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-            "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-            "inAmount": "10003121",
-            "outAmount": "9998099",
-            "feeAmount": "1022",
-            "feeMint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
-          },
-          "percent": 100
-        }
-      ],
-      "contextSlot": 242289509,
-      "timeTaken": 0.002764025
-    }
-    */
+export default Swap;
