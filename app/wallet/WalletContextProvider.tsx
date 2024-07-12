@@ -17,6 +17,9 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
+// Add Helius RPC URL from environment variables
+const HELIUS_MAINNET_RPC_URL = process.env.NEXT_PUBLIC_HEL1US_MAINNET_RPC_URL!;
+
 const ConnectionContext = createContext<{
   connection: Connection | null;
   network: WalletAdapterNetwork;
@@ -36,8 +39,15 @@ export default function AppWalletProvider({
     WalletAdapterNetwork.Devnet
   );
 
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const endpoint = useMemo(() => {
+    if (network === WalletAdapterNetwork.Mainnet && HELIUS_MAINNET_RPC_URL) {
+      return HELIUS_MAINNET_RPC_URL;
+    }
+    return clusterApiUrl(network);
+  }, [network]);
+
   const connection = useMemo(() => new Connection(endpoint), [endpoint]);
+
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
