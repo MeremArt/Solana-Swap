@@ -32,7 +32,7 @@ const Navbar = () => {
               {network === WalletAdapterNetwork.Devnet ? "Mainnet" : "Devnet"}
             </button>
             <div className="border hover:border-slate-900 rounded">
-              <WalletMultiButton style={{}} />
+              <WalletMultiButton className="!bg-[#c2c2cccb] hover:!bg-black transition-all duration-200 !rounded-lg  " />
             </div>
           </div>
         </div>
