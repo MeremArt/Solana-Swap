@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@pythnetwork/client": "^2.21.1",
+    "@solana/actions": "^1.1.2",
+    "@solana/spl-token": "^0.4.8",
     "@solana/wallet-adapter-backpack": "^0.1.14",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
