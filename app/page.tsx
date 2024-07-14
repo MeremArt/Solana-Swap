@@ -14,9 +14,7 @@ import { clusterApiUrl, Connection } from "@solana/web3.js";
 
 // Default styles that can be overridden by your app
 import "@solana/wallet-adapter-react-ui/styles.css";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+
 export default function Home() {
   const [link, setLink] = useState(
     "https://dial.to/?action=solana-action:http://https://solana-swap-kappa.vercel.app//api/actions/transfer-sol"
@@ -35,7 +33,7 @@ export default function Home() {
     <main>
       <div className="text-center">
         <h2 className="text-white text-3xl font-bold font-geist ">
-          BLINK AlTERNATIVE
+          BLINK DONATION
         </h2>
         <div className="mt-4">
           <input
