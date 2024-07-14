@@ -17,7 +17,7 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 
 export default function Home() {
   const [link, setLink] = useState(
-    "https://dial.to/?action=solana-action:http://https://solana-swap-kappa.vercel.app//api/actions/transfer-sol"
+    "https://dial.to/?action=solana-action:http://localhost:3000/api/actions/transfer-sol"
   );
   const [copied, setCopied] = useState(false);
 
