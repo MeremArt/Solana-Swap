@@ -37,7 +37,7 @@ To get started with the Solana Swap App, follow these steps:
 2. **Install Dependencies**: Navigate to the project directory and install dependencies using npm or yarn:
 
     ```bash
-    cd swap
+    cd Solana-Swap
     npm install
     ```
 
