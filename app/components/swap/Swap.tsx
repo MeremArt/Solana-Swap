@@ -774,10 +774,12 @@ const Swap: React.FC = () => {
         {optimalAmount !== null && (
           <div className={styles.optimalAmount}>
             <p className="font-bold text-xl">Best Price from pyth(oracle)</p>{" "}
-            <br />
-            Optimal Amount: {optimalAmount.toFixed(6)} {toAsset.name}
-            <br />
-            Optimal Amount: {optimalAmount?.toFixed(6)} {fromAsset.name}
+            <p>
+              Optimal Amount: {optimalAmount?.toFixed(6)} {fromAsset.name}
+            </p>
+            <p>
+              You will receive: {toAmount?.toFixed(6)} {toAsset.name}
+            </p>
           </div>
         )}
 
