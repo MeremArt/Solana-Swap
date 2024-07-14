@@ -44,8 +44,8 @@ To get started with the Solana Swap App, follow these steps:
   3. **Configuration
      
      Create a .env file in the root directory and add your configuration details:
-        ```bash
-NEXT_PUBLIC_HEL1US_MAINNET_RPC_URL
+    ```bash
+     NEXT_PUBLIC_HEL1US_MAINNET_RPC_URL=
     ```
 4. **Run the Development Server**: Start the development server to run the app locally:
 
