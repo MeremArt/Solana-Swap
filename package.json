@@ -9,9 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@hono/node-server": "^1.12.0",
-    "@hono/zod-openapi": "^0.14.9",
-    "@jup-ag/api": "^6.0.24",
     "@pythnetwork/client": "^2.21.1",
     "@solana/wallet-adapter-backpack": "^0.1.14",
     "@solana/wallet-adapter-base": "^0.9.23",
@@ -19,8 +16,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.35",
     "@solana/wallet-adapter-wallets": "^0.19.32",
     "@solana/web3.js": "^1.91.8",
-    "hono": "^4.4.13",
-    "next": "14.2.3",
+    "next": "^14.2.5",
     "react": "^18",
     "react-dom": "^18",
     "react-toastify": "^10.0.5"
