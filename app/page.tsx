@@ -18,7 +18,9 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 export default function Home() {
-  const [link, setLink] = useState("https://example.com/blinklink");
+  const [link, setLink] = useState(
+    "https://dial.to/?action=solana-action:http://https://solana-swap-kappa.vercel.app//api/actions/transfer-sol"
+  );
   const [copied, setCopied] = useState(false);
 
   // State to track whether the buttons are active or inactive
