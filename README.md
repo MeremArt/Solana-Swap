@@ -31,7 +31,7 @@ To get started with the Solana Swap App, follow these steps:
 1. **Clone the Repository**: Clone this repository to your local machine using:
 
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/MeremArt/Solana-Swap.git
     ```
 
 2. **Install Dependencies**: Navigate to the project directory and install dependencies using npm or yarn:
