@@ -18,7 +18,8 @@ import { clusterApiUrl } from "@solana/web3.js";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 // Add Helius RPC URL from environment variables
-const HELIUS_MAINNET_RPC_URL = process.env.NEXT_PUBLIC_HEL1US_MAINNET_RPC_URL!;
+const HELIUS_MAINNET_RPC_URL =
+  "https://mainnet.helius-rpc.com/?api-key=212bd5ad-9a6b-4e09-802b-2ed2fd25ea1a";
 
 const ConnectionContext = createContext<{
   connection: Connection | null;
