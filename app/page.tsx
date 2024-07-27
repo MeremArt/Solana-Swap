@@ -31,6 +31,25 @@ export default function Home() {
   };
   return (
     <main>
+      <div className="text-center">
+        <h2 className="text-white text-3xl font-bold font-geist ">
+          BLINK DONATION
+        </h2>
+        <div className="mt-4">
+          <input
+            type="text"
+            value={link}
+            readOnly
+            className="p-2 w-2/3 text-center bg-gray-800 text-white rounded-lg"
+          />
+          <button
+            onClick={handleCopyLink}
+            className="ml-4 p-2 text-white text-l font-bold bg-[#03E1FF] hover:bg-gray-300 transition-all duration-200 rounded-lg"
+          >
+            {copied ? "Copied!" : "Copy Link"}
+          </button>
+        </div>
+      </div>
       <Swap />
     </main>
   );
